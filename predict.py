@@ -89,7 +89,7 @@ class Predictor(BasePredictor):
         video: Path = Input(description="Input video"),
         prompt: str = Input(description="Prompt to generate audio"),
         #nprompt with default value of ""
-        nprompt: str = Input(description="Negative prompt for audio generation"),
+        nprompt: str = Input(description="Negative prompt for audio generation",default="")
     ) -> List[Path]:
         """Run a single prediction on the model"""
         
