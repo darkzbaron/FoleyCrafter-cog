@@ -101,9 +101,11 @@ class Predictor(BasePredictor):
         print("prompt",prompt)
         print("nprompt",nprompt)
         #video_ext = video.split('.')[-1]
-        video_ext = Path(input_video).suffix[1:]
-        output_video = video.replace('.' + video_ext, '_folycrafter.' + video_ext)
-        out_audio = video.replace('.' + video_ext, '.wav')
+        
+        video_ext = Path(video).suffix[1:]
+
+        output_video = str(video).replace('.' + video_ext, '_foleycrafter.' + video_ext)
+        out_audio = str(video).replace('.' + video_ext, '.wav')
         
         config = Config()
         #add the video to the config
