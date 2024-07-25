@@ -125,12 +125,15 @@ def run_inference(config, pipe, vocoder, time_detector):
     with torch.no_grad():
         for input_video in input_list:
             input_video_dir = Path(input_video).parent
-            input_video_ext = input_video.split('.')[-1]
+            #input_video_ext = input_video.split('.')[-1]
+            #use Path to get the extension
+            input_video_ext = Path(input_video).suffix[1:]
+            
 
             print(f" >>> Begin Inference: {input_video} <<< ")
             #add folleycrafter to the output name
             video_out_fullpath = input_video.replace('.' + input_video_ext, '_folycrafter.' + input_video_ext)
-            print(f" >>> Output: {video_out_fullpath} <<< ")
+            print(f" >>> Output2: {video_out_fullpath} <<< ")
             frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=150)
 
             time_frames = torch.FloatTensor(frames).permute(0, 3, 1, 2)
@@ -189,7 +192,7 @@ def run_inference(config, pipe, vocoder, time_detector):
             audio = audio[: int(duration * 16000)]
 
             #save_path = osp.join(audio_save_path, f"{name}.wav")
-            save_path = input_video.replace(input_video_ext, ".wav")
+            save_path = input_video.replace("." + input_video_ext, ".wav")
             sf.write(save_path, audio, 16000)
             
             #video_out_fullpath = osp.join(video_save_path, f"{name}.mp4")
@@ -202,9 +205,14 @@ def run_inference(config, pipe, vocoder, time_detector):
             video = video.subclip(0, duration)
             #os.makedirs(video_save_path, exist_ok=True)
             audio_out_fullpath = save_path
+            #take the shortest duration
             
+            if video.duration < duration:
+                duration = video.duration
+            
+            #write the video using the duration
+            video.write_videofile(video_out_fullpath,codec = 'h264_nvenc',duration=duration)
 
-            video.write_videofile(video_out_fullpath,codec = 'h264_nvenc')
 
         return audio_out_fullpath, video_out_fullpath
 
