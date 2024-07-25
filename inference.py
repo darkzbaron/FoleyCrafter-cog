@@ -43,6 +43,7 @@ def args_parse():
     )
     config.add_argument("--device", type=str, default="cuda")
     config = config.parse_args()
+    print(config)
     return config
 
 
@@ -95,11 +96,24 @@ def build_models(config):
 
 
 def run_inference(config, pipe, vocoder, time_detector):
+    
     controlnet_conditioning_scale = config.temporal_scale
-    os.makedirs(config.save_dir, exist_ok=True)
+    
+    #os.makedirs(config.save_dir, exist_ok=True)
+    #check if it's a directory
+    
+    print("Inference method")
+    print("Input path:", config.input)
 
-    input_list = glob.glob(f"{config.input}/*.mp4")
-    assert len(input_list) != 0, "input list is empty!"
+    if osp.isdir(config.input):
+        input_list = glob.glob(f"{config.input}/*.mp4")
+        print("Number of input files found:", len(input_list))
+    else:
+        input_list = [config.input]
+        print("Input is a single file.")
+
+    if len(input_list) == 0:
+        raise ValueError("No input files found. Please check the input path and make sure it contains .mp4 files.")
 
     generator = torch.Generator(device=config.device)
     generator.manual_seed(config.seed)
@@ -110,6 +124,9 @@ def run_inference(config, pipe, vocoder, time_detector):
     input_list.sort()
     with torch.no_grad():
         for input_video in input_list:
+            input_video_dir = Path(input_video).parent
+            input_video_ext = Path(input_video).suffix
+
             print(f" >>> Begin Inference: {input_video} <<< ")
             frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=150)
 
@@ -161,25 +178,36 @@ def run_inference(config, pipe, vocoder, time_detector):
             audio_img = sample.images[0]
             audio = denormalize_spectrogram(audio_img)
             audio = vocoder.inference(audio, lengths=160000)[0]
-            audio_save_path = osp.join(config.save_dir, "audio")
-            video_save_path = osp.join(config.save_dir, "video")
-            os.makedirs(audio_save_path, exist_ok=True)
-            os.makedirs(video_save_path, exist_ok=True)
+            
+            #audio_save_path = osp.join(config.save_dir, "audio")
+            #video_save_path = osp.join(config.save_dir, "video")
+            #os.makedirs(audio_save_path, exist_ok=True)
+            #os.makedirs(video_save_path, exist_ok=True)
             audio = audio[: int(duration * 16000)]
 
-            save_path = osp.join(audio_save_path, f"{name}.wav")
+            #save_path = osp.join(audio_save_path, f"{name}.wav")
+            save_path = input_video.replace(input_video_ext, ".wav")
             sf.write(save_path, audio, 16000)
+            
+            #video_out_fullpath = osp.join(video_save_path, f"{name}.mp4")
+            #audio_out_fullpath = osp.join(audio_save_path, f"{name}.wav")
 
-            audio = AudioFileClip(osp.join(audio_save_path, f"{name}.wav"))
+            audio = AudioFileClip(save_path)
             video = VideoFileClip(input_video)
             audio = audio.subclip(0, duration)
             video.audio = audio
             video = video.subclip(0, duration)
-            os.makedirs(video_save_path, exist_ok=True)
-            video.write_videofile(osp.join(video_save_path, f"{name}.mp4"))
+            #os.makedirs(video_save_path, exist_ok=True)
+            audio_out_fullpath = save_path
+            video_out_fullpath = input_video.replace('.' + input_video_ext, '_folleycrafter' + input_video_ext)
+
+            video.write_videofile(video_out_fullpath)
+
+        return audio_out_fullpath, video_out_fullpath
 
 
 if __name__ == "__main__":
     config = args_parse()
+    print("inference")
     pipe, vocoder, time_detector = build_models(config)
     run_inference(config, pipe, vocoder, time_detector)
