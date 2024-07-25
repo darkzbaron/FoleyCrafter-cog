@@ -140,7 +140,7 @@ def run_inference(config, pipe, vocoder, time_detector):
             #get the number of frames
             total_frames = int(video.fps * video.duration)
             print("Total frames:", total_frames)
-            frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=total_frames)
+            frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=150)
 
             time_frames = torch.FloatTensor(frames).permute(0, 3, 1, 2)
             time_frames = video_transform(time_frames)
@@ -151,7 +151,7 @@ def run_inference(config, pipe, vocoder, time_detector):
             # duration
             # import ipdb; ipdb.set_trace()
             time_condition = [
-                -1 if preds[0][int(i / (1024 / 10 * duration) * total_frames)] < 0.5 else 1
+                -1 if preds[0][int(i / (1024 / 10 * duration) * 150)] < 0.5 else 1
                 for i in range(int(1024 / 10 * duration))
             ]
             time_condition = time_condition + [-1] * (1024 - len(time_condition))
