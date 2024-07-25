@@ -100,7 +100,8 @@ class Predictor(BasePredictor):
         print("video",video)
         print("prompt",prompt)
         print("nprompt",nprompt)
-        video_ext = video.split('.')[-1]
+        #video_ext = video.split('.')[-1]
+        video_ext = Path(video_ext)[1:]
         output_video = video.replace('.' + video_ext, '_folycrafter.' + video_ext)
         out_audio = video.replace('.' + video_ext, '.wav')
         
