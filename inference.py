@@ -134,7 +134,13 @@ def run_inference(config, pipe, vocoder, time_detector):
             #add folleycrafter to the output name
             video_out_fullpath = input_video.replace('.' + input_video_ext, '_folycrafter.' + input_video_ext)
             print(f" >>> Output2: {video_out_fullpath} <<< ")
-            frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=150)
+            #frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=150)
+            #get the number of frames
+            video = VideoFileClip(input_video)
+            #get the number of frames
+            total_frames = int(video.fps * video.duration)
+            print("Total frames:", total_frames)
+            frames, duration = read_frames_with_moviepy(input_video, max_frame_nums=total_frames)
 
             time_frames = torch.FloatTensor(frames).permute(0, 3, 1, 2)
             time_frames = video_transform(time_frames)
@@ -145,7 +151,7 @@ def run_inference(config, pipe, vocoder, time_detector):
             # duration
             # import ipdb; ipdb.set_trace()
             time_condition = [
-                -1 if preds[0][int(i / (1024 / 10 * duration) * 150)] < 0.5 else 1
+                -1 if preds[0][int(i / (1024 / 10 * duration) * total_frames)] < 0.5 else 1
                 for i in range(int(1024 / 10 * duration))
             ]
             time_condition = time_condition + [-1] * (1024 - len(time_condition))
@@ -199,7 +205,7 @@ def run_inference(config, pipe, vocoder, time_detector):
             #audio_out_fullpath = osp.join(audio_save_path, f"{name}.wav")
 
             audio = AudioFileClip(save_path)
-            video = VideoFileClip(input_video)
+            
             audio = audio.subclip(0, duration)
             video.audio = audio
             video = video.subclip(0, duration)
@@ -207,11 +213,10 @@ def run_inference(config, pipe, vocoder, time_detector):
             audio_out_fullpath = save_path
             #take the shortest duration
             
-            if video.duration < duration:
-                duration = video.duration
+            
             
             #write the video using the duration
-            video.write_videofile(video_out_fullpath,codec = 'h264_nvenc',duration=duration)
+            video.write_videofile(video_out_fullpath)
 
 
         return audio_out_fullpath, video_out_fullpath
